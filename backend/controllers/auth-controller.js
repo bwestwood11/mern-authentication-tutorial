@@ -9,6 +9,7 @@ import {
   sendWelcomeEmail,
 } from "../resend/email.js";
 import crypto from "crypto";
+import { hashPassword } from "../utils/hashPassword.js";
 
 export const signup = async (req, res) => {
   const { name, email, password } = req.body;
@@ -21,12 +22,11 @@ export const signup = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = generateVerificationToken();
     const user = new User({
       name,
       email,
-      password: hashedPassword,
+      password: await hashPassword(password),
       verificationToken: verificationToken,
       verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
     });
@@ -153,8 +153,8 @@ export const resetPassword = async (req, res) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
-    console.log(token)
-    console.log(password)
+    console.log(token);
+    console.log(password);
     const user = await User.findOne({
       resetPasswordToken: token,
       resetPasswordExpiresAt: { $gt: Date.now() },
